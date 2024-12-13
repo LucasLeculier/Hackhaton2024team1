@@ -214,7 +214,7 @@
 </header>
 
 <div class="description">
-    <h1>Expliquez vos préférences avec précision</h1>
+    <h1>Affiner votre recherche avec 5 nouvelles interfaces</h1>
     <p>Glissez vers la droite si vous aimez, ou vers la gauche si vous n’aimez pas.</p>
     <div class="progress-container">
         <div class="progress-bar" id="progressBar"></div>
@@ -225,11 +225,6 @@
             <div>3</div>
             <div>4</div>
             <div>5</div>
-            <div>6</div>
-            <div>7</div>
-            <div>8</div>
-            <div>9</div>
-          <div>10</div>
         </div>
       </div>
 </div>
@@ -250,12 +245,19 @@
 
 
     <script>
-        const apiEndpoint = "http://127.0.0.1:8000/fetch_tab";
+        const apiEndpoint = "http://127.0.0.1:8000/fetch_tab_affiner";
         const imageFolder = "./mobbin_trier/";
 
         let images = [];
         let currentIndex = 0;
-        const swipedRightImages = []; // Tableau pour stocker les images swipées à droite
+        //Read local storage "swipedRightImages"
+
+        const swipedRightImages = JSON.parse(localStorage.getItem("swipedRightImages")) || [];
+
+        console.log("Images swipées à droite stockées:", swipedRightImages);
+
+
+
 
         const swiperContainer = document.getElementById("swiper");
 
@@ -270,7 +272,7 @@
         }
 
         let currentProgress = -0.95;
-    const maxProgress = 10;
+    const maxProgress = 5;
 
     function incrementProgress() {
       if (currentProgress <= maxProgress) {
@@ -382,9 +384,8 @@
             console.log("envoie a l'api");
     const formData = new FormData();
     // Vérifiez que 'swipedRightImages' contient les bonnes données avant d'envoyer
-    localStorage.setItem("swipedRightImages", JSON.stringify(swipedRightImages));
-
     formData.append("tab", JSON.stringify(swipedRightImages));
+
     fetch("http://127.0.0.1:8000/save_swiped_images", {  // Corrected to POST
         method: "POST",
         body: formData

@@ -297,6 +297,19 @@ def fetch_tab():
     # Convertir le résultat en JSON et retourner
     return tab
 
+@app.get("/fetch_tab_affiner")
+def fetch_tab():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT image_id FROM mobbin LIMIT 5 OFFSET 10;")
+    result = cursor.fetchall()
+    conn.close()
+
+    tab = [row[0] for row in result]
+
+    # Convertir le résultat en JSON et retourner
+    return tab
+
 """
 @app.get("/save_swiped_images")
 def send_api_call(tab):
