@@ -31,33 +31,50 @@ app.add_middleware(
 import mysql.connector
 import json
 
+# Liste des origines autorisées (ici '*' pour toutes les origines)
+origins = [
+    "*",  # Autorise toutes les origines (à remplacer par une liste spécifique si nécessaire)
+]
+
+
+
 
 def recuperer_data_user(cursor,tab):
 
+    tab = tab.split(",")
 
-    tab = ",".join(f"'{item}'" for item in tab)
+    tab_sql = ""
+    for element in tab:
+        tab_sql += element+","
+
+    #enelever les [ ] de la chaine
+    tab_sql = tab_sql[1:-1]
+    tab_sql = tab_sql[:-1]
+
+    # Construire la requête SQL
     requete = f"""
-    SELECT image_id, couleur, couleur_dominante, formes_principales_et_taille, layout, style_general, navigation, hierarchie_visuelle 
-    FROM mobbin 
-    WHERE image_id IN ({tab})
+    SELECT * from mobbin_bak
+    WHERE image_id IN ({tab_sql})
     """
+
     cursor.execute(requete)
     # Récupérer les résultats sous forme de tableau
     result = cursor.fetchall()
+    
     # Initialiser une liste pour stocker les résultats
     tableau = []
+
 
     # Associé chaque résultat à un dictionnaire
     for row in result:
         image_data = {
             "image_id": row[0],
-            "couleur": row[1],
-            "couleur_dominante": row[2],
-            "formes_principales_et_taille": row[3],
-            "layout": row[4],
-            "style_general": row[5],
-            "navigation": row[6],
-            "hierarchie_visuelle": row[7]
+            "DominantColor": row[1],
+            "PrimaryShapesAndElementSizes": row[2],
+            "Layout": row[3],
+            "GeneralStyle": row[4],
+            "Navigation": row[5],
+            "VisualHierarchy": row[6]
         }
         tableau.append(image_data)    
 
@@ -68,8 +85,30 @@ def recuperer_data_user(cursor,tab):
 
 
 
-def fetch_data_gb(cursor):
-    requete = "SELECT image_id, couleur, couleur_dominante, formes_principales_et_taille, layout, style_general, navigation, hierarchie_visuelle FROM design_features"
+def fetch_data_gb(cursor,reponse_textuelle):
+    print("reponse_textuelle : "+reponse_textuelle)
+
+    #if reponse_textuelle contains "E-commerce"
+    if "E-commerce" in reponse_textuelle:
+        categorie = "E-commerce"
+    elif "Social Media" in reponse_textuelle:
+        categorie = "Social Media"
+    elif "Food and Restaurants" in reponse_textuelle:
+        categorie = "Food and Restaurants"
+    else :
+        categorie = "Activities"    
+
+    if "Theme: Dark" in reponse_textuelle:
+        theme = "Dark"
+    else :
+        theme = "Light"
+
+    print("categorie : "+categorie)
+    print("theme : "+theme)    
+    #ICIIII Récupérer la catégorie via le json
+    requete = "SELECT * FROM design_features_bak where GeneralStyle like '%"+categorie+"%';"
+
+
     cursor.execute(requete)
 
     result_gb = cursor.fetchall()
@@ -79,13 +118,12 @@ def fetch_data_gb(cursor):
     for row in result_gb:
         image_data = {
             "image_id": row[0],
-            "couleur": row[1],
-            "couleur_dominante": row[2],
-            "formes_principales_et_taille": row[3],
-            "layout": row[4],
-            "style_general": row[5],
-            "navigation": row[6],
-            "hierarchie_visuelle": row[7]
+            "DominantColor": row[1],
+            "PrimaryShapesAndElementSizes": row[2],
+            "Layout": row[3],
+            "GeneralStyle": row[4],
+            "Navigation": row[5],
+            "VisualHierarchy": row[6]
         }
         tableau_gb.append(image_data)    
 
@@ -95,7 +133,7 @@ def fetch_data_gb(cursor):
     # Fermer la connexion
     cursor.close()
     
-    return json_gb
+    return json_gb, categorie, theme
 
 
 
@@ -110,7 +148,13 @@ def requete_creation_meilleur_tuple(json_object):
     try:
         # Initialisation du client Anthropic (Claude)
         client_claude = Anthropic(api_key=entropicKey)
-        claude_content = "voici des tuples de caractèristiques, ces plus tuples sont les design de web app que l'utilisateur aime, cependant je n'en veut qu'un au final. donc analyse l'ensemble des tuples pour en retourner un nouveau qui correspond aux gouts de l'user : " + json_object
+        claude_content = """
+        Below are tuples representing the characteristics of web app designs that the user likes. Your task is to analyze all these tuples and return a single new tuple that best matches the user's preferences. When creating the final tuple, prioritize the importance of the criteria as follows:
+        1- Category and Theme Color are the most important factors and should be considered first.
+        2 -The remaining characteristics should then be factored in to refine the final design.
+        Make sure the resulting tuple reflects the user's overall tastes.
+        """+json_object
+        
         print("Requete 1 claude : "+str(len(claude_content)))
         # Envoi de la requête à Claude
         claude_response = client_claude.messages.create(
@@ -136,7 +180,12 @@ def requete_creation_meilleur_tuple(json_object):
     try:
         # Initialisation du client OpenAI (GPT)
         client_gpt = OpenAI(api_key=openAIKey)
-        gpt_content = "voici des tuples de caractèristiques, ces plus tuples sont les design de web app que l'utilisateur aime, cependant je n'en veut qu'un au final. donc analyse l'ensemble des tuples pour en retourner un nouveau qui correspond aux gouts de l'user : " + json_object
+        gpt_content = """
+        Below are tuples representing the characteristics of web app designs that the user likes. Your task is to analyze all these tuples and return a single new tuple that best matches the user's preferences. When creating the final tuple, prioritize the importance of the criteria as follows:
+        1- Category and Theme Color are the most important factors and should be considered first.
+        2 -The remaining characteristics should then be factored in to refine the final design.
+        Make sure the resulting tuple reflects the user's overall tastes.
+        """+json_object
         print("Requete 1 gpt : "+str(len(gpt_content)))
         # Envoi de la requête à GPT
         gpt_response = client_gpt.chat.completions.create(
@@ -169,7 +218,14 @@ def fetch_image_id(reponse_textuelle,json_gb):
         # Initialisation du client Anthropic (Claude)
         client_claude = Anthropic(api_key=entropicKey)
 
-        claude_content = "voici des caractéristiques"+ reponse_textuelle +" retourne moi le tuple qui a le plus de similarité : " + json_gb + " la couleur est un critère véto, essayes de trouver une couleur qui se rapproche le + et retourne moi UNIQUEMENT 1 image_id qui correspond le + parmis tout les critères et dans ta réponse ne dit que l'image_id, rien d'autre"
+        claude_content = "Here are some characteristics: "+reponse_textuelle+". Return the tuple that has the highest similarity to these characteristics: "+json_gb+""".
+
+Prioritize the criteria as follows:
+
+Category and Theme Color are the most important and should be considered first. Try to find a theme color that closely matches the preferences.
+Consider the remaining characteristics to further refine the selection.
+Return only one image_id that best matches all the criteria. In your response, provide only the image_id and nothing else.
+"""
         print("Requete 2 claude : "+str(len(claude_content)))
         # Envoi de la requête à Claude
         claude_response = client_claude.messages.create(
@@ -196,7 +252,14 @@ def fetch_image_id(reponse_textuelle,json_gb):
         # Initialisation du client OpenAI (GPT)
         client_gpt = OpenAI(api_key=openAIKey)
 
-        gpt_content =  "voici des caractéristiques"+ reponse_textuelle +" retourne moi le tuple qui a le plus de similarité : " + json_gb + " la couleur est un critère véto, essayes de trouver une couleur qui se rapproche le + et retourne moi UNIQUEMENT 1 image_id qui correspond le + parmis tout les critères et dans ta réponse ne dit que l'image_id, rien d'autre"
+        gpt_content =   "Here are some characteristics: "+reponse_textuelle+". Return the tuple that has the highest similarity to these characteristics: "+json_gb+""".
+
+Prioritize the criteria as follows:
+
+Category and Theme Color are the most important and should be considered first. Try to find a theme color that closely matches the preferences.
+Consider the remaining characteristics to further refine the selection.
+Return only one image_id that best matches all the criteria. In your response, provide only the image_id and nothing else.
+"""
         print("Requete 2 gpt : "+ str(len(gpt_content)))
         # Envoi de la requête à GPT
         gpt_response = client_gpt.chat.completions.create(
@@ -248,23 +311,22 @@ def api_call(tab):
         # Simulation d'une requête à GPT
         try:
             reponse_textuelle = execute_with_timeout(requete_creation_meilleur_tuple, json_object, timeout=30)
+
         except TimeoutError:
             return {"error": "Timeout lors de la génération de la réponse textuelle"}
 
         # Gestion de la récupération des données GB
         with conn.cursor() as cursor:
             try:
-                json_gb = execute_with_timeout(fetch_data_gb, cursor, timeout=30)
+                json_gb,categorie,theme = execute_with_timeout(fetch_data_gb, cursor,reponse_textuelle, timeout=30)
             except TimeoutError:
                 return {"error": "Timeout lors de la récupération des données GB"}
-
         # Trouver le meilleur tuple
         try:
             reponse_gpt = execute_with_timeout(fetch_image_id, reponse_textuelle, json_gb, timeout=30)
         except TimeoutError:
             return {"error": "Timeout lors de la recherche du meilleur tuple"}
-
-        return reponse_gpt
+        return reponse_gpt,categorie,theme
 
     except mysql.connector.Error as e:
         return {"error": f"Erreur de connexion à la base de données : {e}"}
@@ -288,26 +350,38 @@ def get_db_connection():
 def fetch_tab():
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT image_id FROM mobbin LIMIT 10")
+    cursor.execute("SELECT image_id FROM mobbin_bak where numero_set=0;")
     result = cursor.fetchall()
     conn.close()
 
     tab = [row[0] for row in result]
+
 
     # Convertir le résultat en JSON et retourner
     return tab
 
 @app.get("/fetch_tab_affiner")
-def fetch_tab():
+async def fetch_tab(categorie: str, theme: str):
+
+    if(categorie == "E-commerce"):
+        numero_set = 2
+    elif(categorie == "Social Media"):
+        numero_set = 3
+    elif(categorie == "Food and Restaurants"):
+        numero_set = 1    
+    else:
+        numero_set = 4
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT image_id FROM mobbin LIMIT 5 OFFSET 10;")
+    requete = "SELECT image_id FROM mobbin_bak where numero_set="+str(numero_set)+";"
+    cursor.execute(requete)
     result = cursor.fetchall()
     conn.close()
 
     tab = [row[0] for row in result]
 
     # Convertir le résultat en JSON et retourner
+    print("tab affiné : "+str(tab))
     return tab
 
 """
@@ -317,7 +391,7 @@ def send_api_call(tab):
     return api_call(tab)"""
 
 @app.post("/save_swiped_images")
-
 async def send_api_call(tab: str = Form(...)):
-    retour = api_call(tab)
-    return retour
+    retour,theme,cat = api_call(tab)
+    print("retour : "+str(retour))
+    return retour,theme,cat

@@ -230,6 +230,8 @@
             <div>8</div>
             <div>9</div>
           <div>10</div>
+            <div>11</div>
+            <div>12</div>
         </div>
       </div>
 </div>
@@ -251,7 +253,7 @@
 
     <script>
         const apiEndpoint = "http://127.0.0.1:8000/fetch_tab";
-        const imageFolder = "./mobbin_trier/";
+        const imageFolder = "./mobbin_init/";
 
         let images = [];
         let currentIndex = 0;
@@ -270,7 +272,7 @@
         }
 
         let currentProgress = -0.95;
-    const maxProgress = 10;
+    const maxProgress = 12;
 
     function incrementProgress() {
       if (currentProgress <= maxProgress) {
@@ -383,6 +385,7 @@
     const formData = new FormData();
     // Vérifiez que 'swipedRightImages' contient les bonnes données avant d'envoyer
     localStorage.setItem("swipedRightImages", JSON.stringify(swipedRightImages));
+    console.log("swipedRightImages", swipedRightImages);
 
     formData.append("tab", JSON.stringify(swipedRightImages));
     fetch("http://127.0.0.1:8000/save_swiped_images", {  // Corrected to POST
@@ -391,11 +394,24 @@
     })
     .then(response => response.json())
     .then(data => {
+        const [reponse_gpt, categorie, theme] = data;
+
+        console.log("data" + data)
+
         console.log("Images swipées à droite envoyées avec succès:", data);
         // Stocker les données dans localStorage ou sessionStorage
-        localStorage.setItem("swipedImagesData", JSON.stringify(data));
+        localStorage.setItem("swipedImagesData", JSON.stringify(reponse_gpt));
+        localStorage.setItem("categorie", JSON.stringify(categorie));
+        localStorage.setItem("theme", JSON.stringify(theme));
         // Rediriger vers une nouvelle page
+
+        console.log("reponse_gpt", reponse_gpt);
+        console.log("categorie", categorie);
+        console.log("theme", theme);
+
         window.location.href = "newPage.html";
+
+        
     })
     .catch(error => {
         console.error("Erreur lors de l'envoi des images:", error);

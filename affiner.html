@@ -224,7 +224,6 @@
             <div>2</div>
             <div>3</div>
             <div>4</div>
-            <div>5</div>
         </div>
       </div>
 </div>
@@ -245,9 +244,25 @@
 
 
     <script>
-        const apiEndpoint = "http://127.0.0.1:8000/fetch_tab_affiner";
-        const imageFolder = "./mobbin_trier/";
+        var categories = JSON.parse(localStorage.getItem("categorie"));
+        var themes = JSON.parse(localStorage.getItem("theme"));
 
+
+        const apiEndpoint = `http://127.0.0.1:8000/fetch_tab_affiner?categorie=${encodeURIComponent(categories)}&theme=${encodeURIComponent(themes)}`;
+        var imageFolder = "";
+        if(categories == "E-commerce"){
+            imageFolder = "./e-ecomerce/";
+        }
+        else if(categories == "Social Media"){
+            imageFolder = "./Resau-social/";
+        }   
+        else if(categories == "Food and Restaurants"){
+            imageFolder = "./resto/";
+        }
+        else if(categories == "Activities"){
+            imageFolder = "./activite/";
+        }
+            
         let images = [];
         let currentIndex = 0;
         //Read local storage "swipedRightImages"
@@ -261,8 +276,11 @@
 
         const swiperContainer = document.getElementById("swiper");
 
+        
+
         async function fetchImages() {
             try {
+
                 const response = await fetch(apiEndpoint);
                 images = await response.json();
                 displayNextImage();
@@ -272,7 +290,7 @@
         }
 
         let currentProgress = -0.95;
-    const maxProgress = 5;
+    const maxProgress = 4;
 
     function incrementProgress() {
       if (currentProgress <= maxProgress) {
@@ -396,7 +414,7 @@
         // Stocker les données dans localStorage ou sessionStorage
         localStorage.setItem("swipedImagesData", JSON.stringify(data));
         // Rediriger vers une nouvelle page
-        window.location.href = "newPage.html";
+        window.location.href = "newpage1.html";
     })
     .catch(error => {
         console.error("Erreur lors de l'envoi des images:", error);

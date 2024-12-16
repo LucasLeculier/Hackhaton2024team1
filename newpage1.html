@@ -226,14 +226,11 @@
 document.addEventListener("DOMContentLoaded", function() {
     // Récupérer les données stockées dans le localStorage
     var swipedImagesData = JSON.parse(localStorage.getItem("swipedImagesData"));
+    swipedImagesData = "internalcom_423_floatingtabbar_withmenu@2x.webp";
     
     
     if (swipedImagesData) {
-        //Si swipedImages fini par '.we' alors on remplace par '.webp'
-        if (swipedImagesData.endsWith('.we')) {
-            swipedImagesData = swipedImagesData.replace('.we', '.webp');
-            console.log("traitemetn de l'ext")
-        }
+    
         console.log("Données d'images swipées trouvées:", swipedImagesData);
         // On suppose que 'swipedImagesData' contient une URL ou une donnée appropriée
          //Construire l'URL de l'image
