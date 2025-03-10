@@ -1,6 +1,6 @@
 ﻿# Hackhaton2024team1
 
- #Première Place Challenge GoodBarber
+ # Première Place Challenge GoodBarber
 
 ## Lancer le serveur python : 
 ```cd ./backHackhaton && uvicorn api_tab_init:app --reload```
